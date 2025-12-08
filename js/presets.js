@@ -72,7 +72,7 @@ const HISTORICAL_BENCHMARKS = [
     {
         name: 'Rajneeshee Bioterror Attack',
         year: 1984,
-        conspirators: 17, // Using midpoint of 12-19
+        conspirators: 17, // Using midpoint of estimated 12-19 conspirators from historical records
         peopleAffected: 100000,
         yearsBeforeExposed: 1,
         description: 'Religious cult poisoned salad bars in Oregon to influence an election. 751 people infected with salmonella.',

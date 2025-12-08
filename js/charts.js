@@ -20,7 +20,7 @@ function updateTimeDecayChart(conspirators, professionType, currentYears) {
     
     // Check if Chart.js is available
     if (typeof Chart === 'undefined') {
-        ctx.parentElement.innerHTML = '<p style="text-align: center; color: #6b7280; padding: 2rem;">Chart visualization requires Chart.js library. Please disable ad blockers or use a different browser.</p>';
+        ctx.parentElement.innerHTML = '<p class="chart-unavailable">Chart visualization requires Chart.js library. Please disable ad blockers or use a different browser.</p>';
         return;
     }
     
@@ -70,24 +70,7 @@ function updateTimeDecayChart(conspirators, professionType, currentYears) {
                             return `Probability: ${context.parsed.y.toFixed(2)}%`;
                         }
                     }
-                },
-                annotation: currentYears > 0 ? {
-                    annotations: {
-                        currentYear: {
-                            type: 'line',
-                            xMin: currentYears,
-                            xMax: currentYears,
-                            borderColor: 'red',
-                            borderWidth: 2,
-                            borderDash: [5, 5],
-                            label: {
-                                content: `Current (${currentYears} years)`,
-                                enabled: true,
-                                position: 'start'
-                            }
-                        }
-                    }
-                } : undefined
+                }
             },
             scales: {
                 x: {
@@ -157,7 +140,7 @@ function updateComparisonChart(conspirators, years) {
     
     // Check if Chart.js is available
     if (typeof Chart === 'undefined') {
-        ctx.parentElement.innerHTML = '<p style="text-align: center; color: #6b7280; padding: 2rem;">Chart visualization requires Chart.js library. Please disable ad blockers or use a different browser.</p>';
+        ctx.parentElement.innerHTML = '<p class="chart-unavailable">Chart visualization requires Chart.js library. Please disable ad blockers or use a different browser.</p>';
         return;
     }
     

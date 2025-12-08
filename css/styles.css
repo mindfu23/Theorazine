@@ -429,6 +429,13 @@ h3 {
     height: 400px;
 }
 
+.chart-unavailable {
+    text-align: center;
+    color: var(--text-secondary);
+    padding: var(--spacing-xl);
+    font-style: italic;
+}
+
 /* Probability Gauge */
 .gauge-wrapper {
     display: flex;
