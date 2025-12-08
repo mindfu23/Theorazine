@@ -18,6 +18,12 @@ function updateTimeDecayChart(conspirators, professionType, currentYears) {
     const ctx = document.getElementById('timeDecayChart');
     if (!ctx) return;
     
+    // Check if Chart.js is available
+    if (typeof Chart === 'undefined') {
+        ctx.parentElement.innerHTML = '<p style="text-align: center; color: #6b7280; padding: 2rem;">Chart visualization requires Chart.js library. Please disable ad blockers or use a different browser.</p>';
+        return;
+    }
+    
     // Calculate max years to show (at least 2x current years, or 50 years minimum)
     const maxYears = Math.max(50, currentYears * 2);
     const data = generateProbabilityOverTime(conspirators, professionType, maxYears);
@@ -149,6 +155,12 @@ function updateComparisonChart(conspirators, years) {
     const ctx = document.getElementById('comparisonChart');
     if (!ctx) return;
     
+    // Check if Chart.js is available
+    if (typeof Chart === 'undefined') {
+        ctx.parentElement.innerHTML = '<p style="text-align: center; color: #6b7280; padding: 2rem;">Chart visualization requires Chart.js library. Please disable ad blockers or use a different browser.</p>';
+        return;
+    }
+    
     const benchmarks = getHistoricalBenchmarks();
     
     // Calculate probabilities for benchmarks
@@ -242,6 +254,12 @@ function updateComparisonChart(conspirators, years) {
  * Initialize all charts with default values
  */
 function initializeCharts() {
+    // Only initialize if Chart.js is available
+    if (typeof Chart === 'undefined') {
+        console.warn('Chart.js library not loaded. Charts will not be displayed.');
+        return;
+    }
+    
     updateTimeDecayChart(100, 'government', 10);
     updateComparisonChart(100, 10);
     updateProbabilityGauge(0.5);
