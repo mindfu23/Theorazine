@@ -5,6 +5,69 @@
 
 let timeDecayChart = null;
 let comparisonChart = null;
+let chartUpdateDebouncer = null;
+
+// Chart configurations for reuse
+const CHART_DEFAULTS = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+        legend: {
+            display: true,
+            position: 'top'
+        }
+    },
+    scales: {
+        x: {
+            grid: {
+                color: 'rgba(0, 0, 0, 0.05)'
+            }
+        },
+        y: {
+            grid: {
+                color: 'rgba(0, 0, 0, 0.05)'
+            }
+        }
+    },
+    interaction: {
+        mode: 'nearest',
+        axis: 'x',
+        intersect: false
+    },
+    animation: {
+        duration: 300 // Faster animations
+    }
+};
+
+/**
+ * Safely destroy a chart instance
+ */
+function safeDestroyChart(chart) {
+    if (chart && typeof chart.destroy === 'function') {
+        try {
+            chart.destroy();
+        } catch (error) {
+            console.warn('Error destroying chart:', error);
+        }
+    }
+    return null;
+}
+
+/**
+ * Check if Chart.js is available and show fallback if not
+ */
+function isChartJSAvailable() {
+    return typeof Chart !== 'undefined';
+}
+
+/**
+ * Show chart unavailable message
+ */
+function showChartUnavailable(canvas) {
+    if (canvas && canvas.parentElement) {
+        canvas.parentElement.innerHTML = '<p class="chart-unavailable">Chart visualization requires Chart.js library. Please disable ad blockers or use a different browser.</p>';
+    }
+}
 
 /**
  * Initialize or update the time decay chart
@@ -15,89 +78,91 @@ let comparisonChart = null;
  * @param {number} currentYears - Current years active
  */
 function updateTimeDecayChart(conspirators, professionType, currentYears) {
+    // Debounce chart updates for better performance
+    clearTimeout(chartUpdateDebouncer);
+    chartUpdateDebouncer = setTimeout(() => {
+        doUpdateTimeDecayChart(conspirators, professionType, currentYears);
+    }, 150);
+}
+
+function doUpdateTimeDecayChart(conspirators, professionType, currentYears) {
     const ctx = document.getElementById('timeDecayChart');
     if (!ctx) return;
     
-    // Check if Chart.js is available
-    if (typeof Chart === 'undefined') {
-        ctx.parentElement.innerHTML = '<p class="chart-unavailable">Chart visualization requires Chart.js library. Please disable ad blockers or use a different browser.</p>';
+    if (!isChartJSAvailable()) {
+        showChartUnavailable(ctx);
         return;
     }
     
-    // Calculate max years to show (at least 2x current years, or 50 years minimum)
-    const maxYears = Math.max(50, currentYears * 2);
-    const data = generateProbabilityOverTime(conspirators, professionType, maxYears);
-    
-    // Prepare data for Chart.js
-    const labels = data.map(d => d.year);
-    const probabilities = data.map(d => d.probability);
-    
-    // Destroy existing chart if it exists
-    if (timeDecayChart) {
-        timeDecayChart.destroy();
-    }
-    
-    // Create new chart
-    timeDecayChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'Probability of Remaining Secret (%)',
-                data: probabilities,
-                borderColor: '#3b82f6',
-                backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                borderWidth: 2,
-                fill: true,
-                tension: 0.4,
-                pointRadius: 0,
-                pointHoverRadius: 5
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: true,
-                    position: 'top'
-                },
-                tooltip: {
-                    mode: 'index',
-                    intersect: false,
-                    callbacks: {
-                        label: function(context) {
-                            return `Probability: ${context.parsed.y.toFixed(2)}%`;
+    try {
+        // Calculate max years to show (at least 2x current years, or 50 years minimum)
+        const maxYears = Math.max(50, Math.min(currentYears * 2, 200)); // Cap at 200 for performance
+        const data = generateProbabilityOverTime(conspirators, professionType, maxYears);
+        
+        // Prepare data for Chart.js
+        const labels = data.map(d => d.year);
+        const probabilities = data.map(d => d.probability);
+        
+        // Destroy existing chart safely
+        timeDecayChart = safeDestroyChart(timeDecayChart);
+        
+        // Create new chart with optimized configuration
+        timeDecayChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Probability of Remaining Secret (%)',
+                    data: probabilities,
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: labels.length > 50 ? 0 : 2, // Hide points for large datasets
+                    pointHoverRadius: 5
+                }]
+            },
+            options: {
+                ...CHART_DEFAULTS,
+                plugins: {
+                    ...CHART_DEFAULTS.plugins,
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        callbacks: {
+                            label: function(context) {
+                                return `Probability: ${context.parsed.y.toFixed(2)}%`;
+                            }
                         }
                     }
-                }
-            },
-            scales: {
-                x: {
-                    title: {
-                        display: true,
-                        text: 'Years'
-                    },
-                    grid: {
-                        color: 'rgba(0, 0, 0, 0.05)'
-                    }
                 },
-                y: {
-                    title: {
-                        display: true,
-                        text: 'Probability of Remaining Secret (%)'
+                scales: {
+                    ...CHART_DEFAULTS.scales,
+                    x: {
+                        ...CHART_DEFAULTS.scales.x,
+                        title: {
+                            display: true,
+                            text: 'Years'
+                        }
                     },
-                    min: 0,
-                    max: 100,
-                    grid: {
-                        color: 'rgba(0, 0, 0, 0.05)'
+                    y: {
+                        ...CHART_DEFAULTS.scales.y,
+                        title: {
+                            display: true,
+                            text: 'Probability of Remaining Secret (%)'
+                        },
+                        min: 0,
+                        max: 100
                     }
                 }
-            },
-            interaction: {
-                mode: 'nearest',
-                axis: 'x',
-                intersect: false
+            }
+        });
+    } catch (error) {
+        console.error('Error creating time decay chart:', error);
+        showChartUnavailable(ctx);
+    }
+}
             }
         }
     });

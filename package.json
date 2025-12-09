@@ -1,5 +1,26 @@
 {
+  "name": "theorazine",
+  "version": "1.0.0",
+  "description": "The Conspiracy Calculator - A mathematical tool for analyzing conspiracy theory viability",
+  "main": "index.html",
+  "scripts": {
+    "dev": "python3 -m http.server 8000",
+    "build": "echo 'Static site - no build required'",
+    "test": "echo 'No tests yet'",
+    "lint": "echo 'No linting configured'"
+  },
   "dependencies": {
-    "node-fetch": "^2.7.0"
+    "node-fetch": "^3.3.2"
+  },
+  "devDependencies": {},
+  "keywords": ["conspiracy", "mathematics", "statistics", "probability", "education"],
+  "author": "Your Name",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mindfu23/Theorazine.git"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

@@ -14,6 +14,52 @@ const LEAK_RATES = {
     'general': 0.001
 };
 
+// Cache for expensive calculations
+const calculationCache = new Map();
+const CACHE_SIZE_LIMIT = 1000;
+
+/**
+ * Validate input parameters
+ */
+function validateInputs(conspirators, years, professionType) {
+    if (typeof conspirators !== 'number' || conspirators < 1 || conspirators > 10000000) {
+        throw new Error('Invalid number of conspirators');
+    }
+    if (typeof years !== 'number' || years < 0 || years > 1000) {
+        throw new Error('Invalid number of years');
+    }
+    if (!LEAK_RATES.hasOwnProperty(professionType)) {
+        throw new Error('Invalid profession type');
+    }
+}
+
+/**
+ * Create cache key for memoization
+ */
+function createCacheKey(conspirators, years, professionType, operation) {
+    return `${operation}-${conspirators}-${years}-${professionType}`;
+}
+
+/**
+ * Get cached result or calculate and cache
+ */
+function getCachedOrCalculate(key, calculationFn) {
+    if (calculationCache.has(key)) {
+        return calculationCache.get(key);
+    }
+    
+    const result = calculationFn();
+    
+    // Manage cache size
+    if (calculationCache.size >= CACHE_SIZE_LIMIT) {
+        const firstKey = calculationCache.keys().next().value;
+        calculationCache.delete(firstKey);
+    }
+    
+    calculationCache.set(key, result);
+    return result;
+}
+
 /**
  * Calculate the probability that a conspiracy survives unexposed
  * Using Dr. Grimes' formula: P(t) = exp(-p × N × t)
@@ -24,9 +70,25 @@ const LEAK_RATES = {
  * @returns {number} Probability (0 to 1) that conspiracy remains unexposed
  */
 function calculateSurvivalProbability(conspirators, years, professionType) {
-    const leakRate = LEAK_RATES[professionType] || LEAK_RATES.general;
-    const exponent = -leakRate * conspirators * years;
-    return Math.exp(exponent);
+    try {
+        validateInputs(conspirators, years, professionType);
+        
+        const cacheKey = createCacheKey(conspirators, years, professionType, 'survival');
+        
+        return getCachedOrCalculate(cacheKey, () => {
+            const leakRate = LEAK_RATES[professionType];
+            const exponent = -leakRate * conspirators * years;
+            
+            // Handle extreme values
+            if (exponent < -500) return 0; // Prevent underflow
+            if (exponent > 0) return 1;
+            
+            return Math.exp(exponent);
+        });
+    } catch (error) {
+        console.error('Error calculating survival probability:', error);
+        return 0;
+    }
 }
 
 /**
@@ -38,7 +100,13 @@ function calculateSurvivalProbability(conspirators, years, professionType) {
  * @returns {number} Probability (0 to 1) that conspiracy has been exposed
  */
 function calculateExposureProbability(conspirators, years, professionType) {
-    return 1 - calculateSurvivalProbability(conspirators, years, professionType);
+    try {
+        const survivalProb = calculateSurvivalProbability(conspirators, years, professionType);
+        return Math.max(0, Math.min(1, 1 - survivalProb)); // Clamp between 0 and 1
+    } catch (error) {
+        console.error('Error calculating exposure probability:', error);
+        return 1; // Assume exposed if calculation fails
+    }
 }
 
 /**
@@ -55,11 +123,25 @@ function calculateExposureProbability(conspirators, years, professionType) {
  * @returns {number} Expected years until 50% probability of exposure
  */
 function calculateExpectedTimeUntilExposure(conspirators, professionType) {
-    const leakRate = LEAK_RATES[professionType] || LEAK_RATES.general;
-    if (conspirators === 0 || leakRate === 0) {
+    try {
+        validateInputs(conspirators, 0, professionType); // years = 0 for this calculation
+        
+        const cacheKey = createCacheKey(conspirators, 0, professionType, 'expected');
+        
+        return getCachedOrCalculate(cacheKey, () => {
+            const leakRate = LEAK_RATES[professionType];
+            
+            if (conspirators <= 0 || leakRate <= 0) {
+                return Infinity;
+            }
+            
+            const result = 0.693 / (leakRate * conspirators);
+            return Math.max(0, result); // Ensure non-negative
+        });
+    } catch (error) {
+        console.error('Error calculating expected time:', error);
         return Infinity;
     }
-    return 0.693 / (leakRate * conspirators);
 }
 
 /**
@@ -71,18 +153,50 @@ function calculateExpectedTimeUntilExposure(conspirators, professionType) {
  * @returns {Array} Array of {year, probability} objects
  */
 function generateProbabilityOverTime(conspirators, professionType, maxYears = 100) {
-    const data = [];
-    const step = maxYears > 50 ? 5 : 1;
-    
-    for (let year = 0; year <= maxYears; year += step) {
-        const probability = calculateSurvivalProbability(conspirators, year, professionType);
-        data.push({
-            year: year,
-            probability: probability * 100 // Convert to percentage
+    try {
+        validateInputs(conspirators, 0, professionType);
+        
+        const cacheKey = createCacheKey(conspirators, maxYears, professionType, 'series');
+        
+        return getCachedOrCalculate(cacheKey, () => {
+            const data = [];
+            
+            // Optimize step size based on data range
+            let step = 1;
+            if (maxYears > 200) step = 10;
+            else if (maxYears > 100) step = 5;
+            else if (maxYears > 50) step = 2;
+            
+            const leakRate = LEAK_RATES[professionType];
+            
+            for (let year = 0; year <= maxYears; year += step) {
+                const exponent = -leakRate * conspirators * year;
+                let probability;
+                
+                // Handle extreme values efficiently
+                if (exponent < -500) {
+                    probability = 0;
+                } else if (exponent > 0) {
+                    probability = 100;
+                } else {
+                    probability = Math.exp(exponent) * 100;
+                }
+                
+                data.push({
+                    year: year,
+                    probability: Math.max(0, Math.min(100, probability))
+                });
+                
+                // Early termination when probability becomes negligible
+                if (probability < 0.01 && year > 10) break;
+            }
+            
+            return data;
         });
+    } catch (error) {
+        console.error('Error generating probability over time:', error);
+        return [{year: 0, probability: 100}]; // Fallback data
     }
-    
-    return data;
 }
 
 /**

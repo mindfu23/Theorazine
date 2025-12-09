@@ -3,151 +3,322 @@
  * Handles user interactions and updates the UI
  */
 
+// Cache DOM elements for better performance
+let domElements = {};
+let isCalculating = false;
+let debounceTimer = null;
+
 // Wait for DOM to be fully loaded
 document.addEventListener('DOMContentLoaded', function() {
-    // Perplexity API button logic
-    const perplexityBtn = document.getElementById('perplexityBtn');
-    const conspiracyNameInput = document.getElementById('conspiracyName');
-    const conspiracyDescriptionInput = document.getElementById('conspiracyDescription');
-    const perplexityResults = document.getElementById('perplexityResults');
-
-    if (perplexityBtn) {
-        perplexityBtn.addEventListener('click', async function() {
-            const name = conspiracyNameInput.value.trim();
-            const desc = conspiracyDescriptionInput.value.trim();
-            if (!name || !desc) {
-                perplexityResults.innerHTML = '<span style="color:red">Please enter both a name and description.</span>';
-                return;
-            }
-            perplexityResults.innerHTML = 'Querying Perplexity...';
-            try {
-                const result = await window.queryPerplexity(name, desc);
-                const answer = result.choices?.[0]?.message?.content || 'No answer.';
-                // Try to extract footnotes/links
-                const footnotes = (answer.match(/https?:\/\/[^\s)]+/g) || []).map(url => `<a href="${url}" target="_blank">${url}</a>`).join('<br>');
-                perplexityResults.innerHTML = `<strong>Perplexity Estimate:</strong><br><pre>${answer}</pre>${footnotes ? `<br><strong>Sources:</strong><br>${footnotes}` : ''}`;
-            } catch (e) {
-                perplexityResults.innerHTML = `<span style="color:red">Error: ${e.message}</span>`;
-            }
-        });
+    try {
+        initializeDOMElements();
+        initializeEventListeners();
+        // Load initial calculations
+        updateCalculations();
+    } catch (error) {
+        console.error('Failed to initialize app:', error);
+        showErrorMessage('Application failed to load properly. Please refresh the page.');
     }
-    // Get input elements
-    const conspiratorsInput = document.getElementById('conspirators');
-    const conspiratorsSlider = document.getElementById('conspiratorsSlider');
-    const professionTypeSelect = document.getElementById('professionType');
-    const yearsActiveInput = document.getElementById('yearsActive');
-    const yearsActiveSlider = document.getElementById('yearsActiveSlider');
-    const populationAffectedInput = document.getElementById('populationAffected');
+});
 
-    // Get preset buttons
-    const presetButtons = document.querySelectorAll('.preset-btn');
+/**
+ * Cache all DOM elements to avoid repeated queries
+ */
+function initializeDOMElements() {
+    const elementIds = [
+        'perplexityBtn', 'conspiracyName', 'conspiracyDescription', 'perplexityResults',
+        'conspirators', 'conspiratorsSlider', 'professionType', 'yearsActive',
+        'yearsActiveSlider', 'populationAffected', 'survivalProbability',
+        'exposureProbability', 'expectedTime', 'survivalDescription',
+        'credibilityBanner', 'credibilityLevel', 'credibilityDescription', 'survivalCard'
+    ];
+    
+    elementIds.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            domElements[id] = element;
+        } else {
+            console.warn(`Element with id '${id}' not found`);
+        }
+    });
+    
+    domElements.presetButtons = document.querySelectorAll('.preset-btn');
+}
 
-    // Sync number inputs with sliders
-    function syncInputWithSlider(input, slider) {
-        input.addEventListener('input', function() {
-            const value = Math.min(parseInt(this.value) || 0, parseInt(slider.max));
-            slider.value = value;
-            updateCalculations();
-        });
+/**
+ * Initialize all event listeners
+ */
+function initializeEventListeners() {
 
-        slider.addEventListener('input', function() {
-            input.value = this.value;
-            updateCalculations();
-        });
+    // Perplexity API integration
+    if (domElements.perplexityBtn && window.queryPerplexity) {
+        domElements.perplexityBtn.addEventListener('click', handlePerplexityQuery);
     }
-
-    syncInputWithSlider(conspiratorsInput, conspiratorsSlider);
-    syncInputWithSlider(yearsActiveInput, yearsActiveSlider);
-
+    // Sync inputs with sliders and add debounced updates
+    if (domElements.conspirators && domElements.conspiratorsSlider) {
+        syncInputWithSlider(domElements.conspirators, domElements.conspiratorsSlider);
+    }
+    if (domElements.yearsActive && domElements.yearsActiveSlider) {
+        syncInputWithSlider(domElements.yearsActive, domElements.yearsActiveSlider);
+    }
+    
     // Add event listeners for all inputs
-    professionTypeSelect.addEventListener('change', updateCalculations);
-    populationAffectedInput.addEventListener('input', updateCalculations);
+    if (domElements.professionType) {
+        domElements.professionType.addEventListener('change', debouncedUpdate);
+    }
+    if (domElements.populationAffected) {
+        domElements.populationAffected.addEventListener('input', debouncedUpdate);
+    }
 
     // Handle preset button clicks
-    presetButtons.forEach(button => {
+    domElements.presetButtons.forEach(button => {
         button.addEventListener('click', function() {
             const presetId = this.getAttribute('data-preset');
             loadPreset(presetId);
         });
     });
+}
+
+/**
+ * Debounced update function to prevent excessive calculations
+ */
+function debouncedUpdate() {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+        updateCalculations();
+    }, 100);
+}
+
+/**
+ * Sync number inputs with sliders with validation
+ */
+function syncInputWithSlider(input, slider) {
+    input.addEventListener('input', function() {
+        const value = Math.min(Math.max(parseInt(this.value) || 0, 0), parseInt(slider.max));
+        slider.value = value;
+        this.value = value; // Ensure input shows validated value
+        debouncedUpdate();
+    });
+
+    slider.addEventListener('input', function() {
+        input.value = this.value;
+        debouncedUpdate();
+    });
+}
+
+/**
+ * Handle Perplexity API query with proper error handling
+ */
+async function handlePerplexityQuery() {
+    const name = domElements.conspiracyName?.value?.trim();
+    const desc = domElements.conspiracyDescription?.value?.trim();
+    
+    if (!name || !desc) {
+        showErrorMessage('Please enter both a name and description.', domElements.perplexityResults);
+        return;
+    }
+    
+    if (!domElements.perplexityResults) return;
+    
+    domElements.perplexityBtn.disabled = true;
+    domElements.perplexityResults.innerHTML = '<div class="loading">Querying Perplexity...</div>';
+    
+    try {
+        const result = await window.queryPerplexity(name, desc);
+        const answer = result.choices?.[0]?.message?.content || 'No answer received.';
+        
+        // Sanitize and format the response
+        const sanitizedAnswer = sanitizeHTML(answer);
+        const footnotes = extractFootnotes(answer);
+        
+        domElements.perplexityResults.innerHTML = `
+            <div class="perplexity-result">
+                <strong>Perplexity Estimate:</strong>
+                <pre class="answer-text">${sanitizedAnswer}</pre>
+                ${footnotes ? `<div class="sources"><strong>Sources:</strong><br>${footnotes}</div>` : ''}
+            </div>
+        `;
+    } catch (error) {
+        console.error('Perplexity API error:', error);
+        showErrorMessage(`Error: ${error.message}`, domElements.perplexityResults);
+    } finally {
+        domElements.perplexityBtn.disabled = false;
+    }
+}
+
+/**
+ * Show error messages in a consistent format
+ */
+function showErrorMessage(message, container = null) {
+    const errorHTML = `<div class="error-message">${message}</div>`;
+    if (container) {
+        container.innerHTML = errorHTML;
+    } else {
+        console.error(message);
+    }
+}
+
+/**
+ * Basic HTML sanitization
+ */
+function sanitizeHTML(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
+/**
+ * Extract and format footnotes from text
+ */
+function extractFootnotes(text) {
+    const urlRegex = /https?:\/\/[^\s)]+/g;
+    const urls = text.match(urlRegex) || [];
+    return urls.map(url => `<a href="${url}" target="_blank" rel="noopener">${url}</a>`).join('<br>');
+}
 
     /**
      * Load a preset conspiracy theory
      */
     function loadPreset(presetId) {
-        const preset = getPreset(presetId);
-        if (!preset) return;
+        try {
+            const preset = getPreset(presetId);
+            if (!preset) {
+                console.error('Preset not found:', presetId);
+                return;
+            }
 
-        // Update inputs
-        conspiratorsInput.value = preset.conspirators;
-        conspiratorsSlider.value = Math.min(preset.conspirators, parseInt(conspiratorsSlider.max));
-        professionTypeSelect.value = preset.professionType;
-        yearsActiveInput.value = preset.yearsActive;
-        yearsActiveSlider.value = Math.min(preset.yearsActive, parseInt(yearsActiveSlider.max));
-        populationAffectedInput.value = preset.populationAffected;
+            // Update inputs safely
+            if (domElements.conspirators) {
+                domElements.conspirators.value = preset.conspirators;
+            }
+            if (domElements.conspiratorsSlider) {
+                domElements.conspiratorsSlider.value = Math.min(preset.conspirators, parseInt(domElements.conspiratorsSlider.max));
+            }
+            if (domElements.professionType) {
+                domElements.professionType.value = preset.professionType;
+            }
+            if (domElements.yearsActive) {
+                domElements.yearsActive.value = preset.yearsActive;
+            }
+            if (domElements.yearsActiveSlider) {
+                domElements.yearsActiveSlider.value = Math.min(preset.yearsActive, parseInt(domElements.yearsActiveSlider.max));
+            }
+            if (domElements.populationAffected) {
+                domElements.populationAffected.value = preset.populationAffected;
+            }
 
-        // Highlight active button
-        presetButtons.forEach(btn => btn.classList.remove('active'));
-        document.querySelector(`[data-preset="${presetId}"]`).classList.add('active');
+            // Highlight active button
+            domElements.presetButtons.forEach(btn => btn.classList.remove('active'));
+            const activeButton = document.querySelector(`[data-preset="${presetId}"]`);
+            if (activeButton) {
+                activeButton.classList.add('active');
+            }
 
-        // Update calculations
-        updateCalculations();
+            // Update calculations
+            updateCalculations();
 
-        // Show preset information
-        showPresetInfo(preset);
+            // Show preset information
+            showPresetInfo(preset);
+        } catch (error) {
+            console.error('Error loading preset:', error);
+            showErrorMessage('Failed to load preset. Please try again.');
+        }
     }
 
     /**
      * Show information about the loaded preset
      */
     function showPresetInfo(preset) {
-        const survivalCard = document.getElementById('survivalCard');
-        const existingInfo = survivalCard.querySelector('.preset-info');
+        if (!domElements.survivalCard) return;
         
-        if (existingInfo) {
-            existingInfo.remove();
-        }
+        try {
+            const existingInfo = domElements.survivalCard.querySelector('.preset-info');
+            if (existingInfo) {
+                existingInfo.remove();
+            }
 
-        const infoDiv = document.createElement('div');
-        infoDiv.className = 'preset-info';
-        infoDiv.innerHTML = `
-            <h4>${preset.name}</h4>
-            <p>${preset.description}</p>
-            <p class="preset-explanation">${preset.explanation}</p>
-        `;
-        
-        survivalCard.insertBefore(infoDiv, survivalCard.firstChild);
+            const infoDiv = document.createElement('div');
+            infoDiv.className = 'preset-info';
+            infoDiv.innerHTML = `
+                <h4>${sanitizeHTML(preset.name)}</h4>
+                <p>${sanitizeHTML(preset.description)}</p>
+                <p class="preset-explanation">${sanitizeHTML(preset.explanation)}</p>
+            `;
+            
+            domElements.survivalCard.insertBefore(infoDiv, domElements.survivalCard.firstChild);
+        } catch (error) {
+            console.error('Error showing preset info:', error);
+        }
     }
 
     /**
      * Update all calculations and visualizations
      */
     function updateCalculations() {
-        const conspirators = parseInt(conspiratorsInput.value) || 0;
-        const professionType = professionTypeSelect.value;
-        const years = parseInt(yearsActiveInput.value) || 0;
-        const populationAffected = parseInt(populationAffectedInput.value) || 0;
+        if (isCalculating) return; // Prevent concurrent calculations
+        
+        try {
+            isCalculating = true;
+            
+            const conspirators = parseInt(domElements.conspirators?.value) || 0;
+            const professionType = domElements.professionType?.value || 'general';
+            const years = parseInt(domElements.yearsActive?.value) || 0;
+            const populationAffected = parseInt(domElements.populationAffected?.value) || 0;
 
-        // Calculate probabilities
-        const survivalProb = calculateSurvivalProbability(conspirators, years, professionType);
-        const exposureProb = calculateExposureProbability(conspirators, years, professionType);
-        const expectedTime = calculateExpectedTimeUntilExposure(conspirators, professionType);
-        const credibility = getCredibilityLevel(survivalProb);
+            // Validate inputs
+            if (conspirators < 1 || years < 0) {
+                console.warn('Invalid input values');
+                return;
+            }
 
-        // Update result displays
-        document.getElementById('survivalProbability').textContent = formatProbability(survivalProb);
-        document.getElementById('exposureProbability').textContent = formatProbability(exposureProb);
-        document.getElementById('expectedTime').textContent = formatTimeDuration(expectedTime);
+            // Calculate probabilities with error handling
+            const survivalProb = calculateSurvivalProbability(conspirators, years, professionType);
+            const exposureProb = calculateExposureProbability(conspirators, years, professionType);
+            const expectedTime = calculateExpectedTimeUntilExposure(conspirators, professionType);
+            const credibility = getCredibilityLevel(survivalProb);
 
-        // Update survival description
-        document.getElementById('survivalDescription').textContent = 
-            `With ${conspirators.toLocaleString()} ${getProfessionName(professionType)} keeping this secret for ${years} years`;
+            // Update result displays safely
+            if (domElements.survivalProbability) {
+                domElements.survivalProbability.textContent = formatProbability(survivalProb);
+            }
+            if (domElements.exposureProbability) {
+                domElements.exposureProbability.textContent = formatProbability(exposureProb);
+            }
+            if (domElements.expectedTime) {
+                domElements.expectedTime.textContent = formatTimeDuration(expectedTime);
+            }
 
-        // Update credibility banner
-        const credibilityBanner = document.getElementById('credibilityBanner');
-        credibilityBanner.className = `credibility-banner ${credibility.color}`;
-        document.getElementById('credibilityLevel').textContent = credibility.level;
-        document.getElementById('credibilityDescription').textContent = credibility.description;
+            // Update survival description
+            if (domElements.survivalDescription) {
+                domElements.survivalDescription.textContent = 
+                    `With ${conspirators.toLocaleString()} ${getProfessionName(professionType)} keeping this secret for ${years} years`;
+            }
+
+            // Update credibility banner
+            if (domElements.credibilityBanner && credibility) {
+                domElements.credibilityBanner.className = `credibility-banner ${credibility.color}`;
+                if (domElements.credibilityLevel) {
+                    domElements.credibilityLevel.textContent = credibility.level;
+                }
+                if (domElements.credibilityDescription) {
+                    domElements.credibilityDescription.textContent = credibility.description;
+                }
+            }
+
+            // Update charts if functions exist
+            if (typeof updateTimeDecayChart === 'function') {
+                updateTimeDecayChart(conspirators, professionType, years);
+            }
+            if (typeof updateComparisonChart === 'function') {
+                updateComparisonChart(conspirators, professionType);
+            }
+        } catch (error) {
+            console.error('Error updating calculations:', error);
+            showErrorMessage('Error updating calculations. Please check your inputs.');
+        } finally {
+            isCalculating = false;
+        }
+    }
 
         // Update result card colors
         updateResultCardColors(survivalProb);
