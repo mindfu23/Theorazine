@@ -117,7 +117,7 @@ Please be objective, cite specific examples where possible, and keep response un
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 45000); // 45 second timeout for reasoning model
 
-    const response = await fetch('https://api.perplexity.ai/v1/chat/completions', {
+    const response = await fetch('https://api.perplexity.ai/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
@@ -125,7 +125,7 @@ Please be objective, cite specific examples where possible, and keep response un
         'User-Agent': 'Theorazine/2.0'
       },
       body: JSON.stringify({
-        model: 'sonar-pro',  // Using sonar-pro for advanced reasoning
+        model: 'sonar-reasoning',  // Fast reasoning model with search
         messages: [{ 
           role: 'user', 
           content: prompt 
