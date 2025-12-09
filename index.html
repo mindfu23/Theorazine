@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conspiracy Theorazine - Estimate the Likelihood of Conspiracy Theories</title>
+    <meta name="description" content="An educational tool using mathematical models to estimate how long conspiracy theories could realistically remain secret.">
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🕵️ Conspiracy Theorazine</h1>
+            <p class="subtitle">Can that conspiracy theory actually be true? Let's do the math.</p>
+        </header>
+
+        <main>
+            <!-- Calculator Section -->
+            <section class="calculator-section">
+                <h2>📊 Conspiracy Calculator</h2>
+                
+                <div class="preset-buttons">
+                    <h3>Or try a famous example:</h3>
+                    <div class="preset-grid">
+                        <button class="preset-btn" data-preset="moon-landing">🌙 Moon Landing</button>
+                        <button class="preset-btn" data-preset="climate-change">🌍 Climate Change</button>
+                        <button class="preset-btn" data-preset="nine-eleven">🏢 9/11 Inside Job</button>
+                        <button class="preset-btn" data-preset="birtherism">📜 Birtherism</button>
+                        <button class="preset-btn" data-preset="bin-laden">🎯 Bin Laden</button>
+                    </div>
+                </div>
+
+                <div class="input-section">
+                    <div class="input-group">
+                        <label for="conspirators">
+                            Number of Conspirators
+                            <span class="tooltip">ℹ️
+                                <span class="tooltip-text">How many people would need to keep this secret?</span>
+                            </span>
+                        </label>
+                        <input type="number" id="conspirators" min="1" max="10000000" value="100" step="1">
+                        <input type="range" id="conspiratorsSlider" min="1" max="100000" value="100" step="1" class="slider">
+                    </div>
+
+                    <div class="input-group">
+                        <label for="professionType">
+                            Type of Conspirators
+                            <span class="tooltip">ℹ️
+                                <span class="tooltip-text">Different professions have different leak rates based on training and culture</span>
+                            </span>
+                        </label>
+                        <select id="professionType">
+                            <option value="intelligence">Intelligence Workers (lowest leak rate)</option>
+                            <option value="scientists">Scientists/Researchers</option>
+                            <option value="military">Military Personnel</option>
+                            <option value="government" selected>Government Bureaucrats</option>
+                            <option value="corporate">Corporate Employees</option>
+                            <option value="general">General Public (highest leak rate)</option>
+                        </select>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="yearsActive">
+                            Years the Conspiracy Has Been Active
+                            <span class="tooltip">ℹ️
+                                <span class="tooltip-text">How long has this secret allegedly been kept?</span>
+                            </span>
+                        </label>
+                        <input type="number" id="yearsActive" min="0" max="200" value="10" step="1">
+                        <input type="range" id="yearsActiveSlider" min="0" max="100" value="10" step="1" class="slider">
+                    </div>
+
+                    <div class="input-group">
+                        <label for="populationAffected">
+                            Population Affected (Optional)
+                            <span class="tooltip">ℹ️
+                                <span class="tooltip-text">How many people would care about or be impacted by this secret?</span>
+                            </span>
+                        </label>
+                        <input type="number" id="populationAffected" min="0" max="10000000000" value="1000000" step="1000">
+                    </div>
+                </div>
+            </section>
+
+            <!-- Results Section -->
+            <section class="results-section">
+                <h2>📈 Results</h2>
+                
+                <div class="results-grid">
+                    <div class="result-card" id="survivalCard">
+                        <h3>Probability of Remaining Secret</h3>
+                        <div class="result-value" id="survivalProbability">50%</div>
+                        <p class="result-description" id="survivalDescription">Calculating...</p>
+                    </div>
+
+                    <div class="result-card" id="exposureCard">
+                        <h3>Probability Already Exposed</h3>
+                        <div class="result-value" id="exposureProbability">50%</div>
+                        <p class="result-description">The mathematical likelihood this secret has already leaked</p>
+                    </div>
+
+                    <div class="result-card" id="expectedTimeCard">
+                        <h3>Expected Time Until Exposure</h3>
+                        <div class="result-value" id="expectedTime">10 years</div>
+                        <p class="result-description">When the probability of remaining secret drops to 50%</p>
+                    </div>
+                </div>
+
+                <div class="credibility-banner" id="credibilityBanner">
+                    <h3 id="credibilityLevel">Unlikely</h3>
+                    <p id="credibilityDescription">Assessing credibility...</p>
+                </div>
+            </section>
+
+            <!-- Visualizations Section -->
+            <section class="charts-section">
+                <h2>📉 Visualizations</h2>
+                
+                <div class="chart-container">
+                    <h3>Probability Gauge</h3>
+                    <div class="gauge-wrapper">
+                        <div id="probabilityGauge" class="gauge">
+                            <div class="gauge-background"></div>
+                            <div class="gauge-needle" id="gaugeNeedle"></div>
+                            <div class="gauge-center"></div>
+                            <div class="gauge-labels">
+                                <span class="gauge-label-left">0%</span>
+                                <span class="gauge-label-right">100%</span>
+                            </div>
+                        </div>
+                        <div class="gauge-value" id="gaugeValue">50%</div>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <h3>Probability Decay Over Time</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="timeDecayChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <h3>Comparison with Historical Examples</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="comparisonChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Educational Content -->
+            <section class="info-section">
+                <h2>🧠 How It Works</h2>
+                <div class="info-content">
+                    <p>This calculator is based on <strong>Dr. David Robert Grimes'</strong> mathematical model from his 2016 paper <em>"On the Viability of Conspiratorial Beliefs"</em> published in PLOS ONE.</p>
+                    
+                    <h3>The Core Formula</h3>
+                    <div class="formula">
+                        P(t) = e<sup>-p × N × t</sup>
+                    </div>
+                    <ul>
+                        <li><strong>P(t)</strong> = Probability the conspiracy survives unexposed for time t</li>
+                        <li><strong>p</strong> = Probability per year that each conspirator will leak</li>
+                        <li><strong>N</strong> = Number of conspirators</li>
+                        <li><strong>t</strong> = Time in years</li>
+                    </ul>
+
+                    <p>The model shows that as the number of conspirators increases, or as time passes, the probability of maintaining secrecy decreases <em>exponentially</em>.</p>
+
+                    <h3>Profession-Based Leak Rates</h3>
+                    <p>Dr. Grimes analyzed real conspiracies to estimate how often people in different professions leak secrets:</p>
+                    <ul>
+                        <li><strong>Intelligence Workers:</strong> 0.0003 per year (most secretive)</li>
+                        <li><strong>Scientists/Researchers:</strong> 0.0004 per year</li>
+                        <li><strong>Military Personnel:</strong> 0.0004 per year</li>
+                        <li><strong>Government Bureaucrats:</strong> 0.0005 per year</li>
+                        <li><strong>Corporate Employees:</strong> 0.0006 per year</li>
+                        <li><strong>General Public:</strong> 0.001 per year (least secretive)</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section class="info-section">
+                <h2>🤐 Why Secrets Fail</h2>
+                <div class="info-content">
+                    <h3>Humans Suck at Keeping Secrets</h3>
+                    <p>Even trained professionals with security clearances leak information. Consider:</p>
+                    <ul>
+                        <li><strong>Bill Clinton</strong> couldn't keep an affair with an intern secret in the Oval Office with the world's best intelligence agencies protecting him</li>
+                        <li><strong>Edward Snowden</strong> - Single NSA contractor exposed massive surveillance programs</li>
+                        <li><strong>WikiLeaks</strong> - One Army private (Chelsea Manning) leaked 750,000 classified documents</li>
+                        <li><strong>Watergate</strong> - A burglary with a few conspirators toppled a presidency</li>
+                    </ul>
+
+                    <h3>The Math is Brutal</h3>
+                    <p>With large-scale conspiracies:</p>
+                    <ul>
+                        <li>1,000 people keeping a secret for 5 years? Probability: <strong>~13%</strong></li>
+                        <li>10,000 people for 10 years? Probability: <strong>< 0.01%</strong></li>
+                        <li>100,000 people for 20 years? Probability: <strong>Effectively zero</strong></li>
+                    </ul>
+
+                    <h3>Why This Matters</h3>
+                    <p>Extraordinary claims require extraordinary evidence. When a conspiracy theory requires thousands of people to maintain perfect silence for decades, the mathematics of human behavior makes it virtually impossible.</p>
+                </div>
+            </section>
+
+            <section class="info-section">
+                <h2>📚 Historical Examples</h2>
+                <div class="info-content">
+                    <p>Real conspiracies that <strong>failed</strong> to stay secret, despite small numbers and short durations:</p>
+                    
+                    <div class="historical-grid">
+                        <div class="historical-card">
+                            <h3>Guy Fawkes Gunpowder Plot (1605)</h3>
+                            <p><strong>Conspirators:</strong> 14</p>
+                            <p><strong>Duration Before Exposure:</strong> 1.5 years</p>
+                            <p><strong>Outcome:</strong> Discovered via anonymous letter before it could be carried out</p>
+                        </div>
+
+                        <div class="historical-card">
+                            <h3>Rajneeshee Bioterror Attack (1984)</h3>
+                            <p><strong>Conspirators:</strong> 12-19</p>
+                            <p><strong>Duration Before Exposure:</strong> 1 year</p>
+                            <p><strong>Outcome:</strong> 751 people poisoned with salmonella; exposed through investigation</p>
+                        </div>
+
+                        <div class="historical-card">
+                            <h3>Downing Street Memo (2002)</h3>
+                            <p><strong>Conspirators:</strong> 23</p>
+                            <p><strong>Duration Before Exposure:</strong> 3 years</p>
+                            <p><strong>Outcome:</strong> British government's Iraq War intelligence fixing leaked to journalists</p>
+                        </div>
+                    </div>
+
+                    <p class="note"><strong>Note:</strong> All of these involved fewer than 25 people and were exposed within 3 years. Large-scale conspiracies involving thousands of people for decades are mathematically implausible.</p>
+                </div>
+            </section>
+
+            <section class="info-section">
+                <h2>ℹ️ About This Tool</h2>
+                <div class="info-content">
+                    <h3>Purpose</h3>
+                    <p>Conspiracy Theorazine is an educational tool designed to promote critical thinking about conspiracy theories. It uses peer-reviewed mathematical models to estimate whether large-scale conspiracies could realistically remain secret.</p>
+
+                    <h3>Limitations</h3>
+                    <ul>
+                        <li>This is a <strong>probabilistic model</strong>, not a definitive truth detector</li>
+                        <li>Real-world factors like compartmentalization, fear, or incentives can affect leak rates</li>
+                        <li>Small conspiracies (< 10 people) can sometimes stay hidden for years</li>
+                        <li>The model assumes conspirators are aware of their participation</li>
+                    </ul>
+
+                    <h3>Credits</h3>
+                    <ul>
+                        <li><strong>Mathematical Model:</strong> Dr. David Robert Grimes (<a href="https://doi.org/10.1371/journal.pone.0147905" target="_blank" rel="noopener">PLOS ONE paper</a>)</li>
+                        <li><strong>Inspiration:</strong> James Beach's essay "Conspiracy Theorazine"</li>
+                        <li><strong>Implementation:</strong> Open source project (<a href="https://github.com/mindfu23/Theorazine" target="_blank" rel="noopener">GitHub</a>)</li>
+                    </ul>
+
+                    <h3>Disclaimer</h3>
+                    <p>This tool is for educational and entertainment purposes. While based on peer-reviewed research, it should not be considered the final word on any particular conspiracy theory. Critical thinking, evidence evaluation, and healthy skepticism should always guide belief formation.</p>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>&copy; 2024 Conspiracy Theorazine | <a href="https://github.com/mindfu23/Theorazine" target="_blank" rel="noopener">Open Source</a> | Based on research by Dr. David Robert Grimes</p>
+        </footer>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="js/calculator.js"></script>
+    <script src="js/presets.js"></script>
+    <script src="js/charts.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
