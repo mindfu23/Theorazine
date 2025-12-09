@@ -8,10 +8,11 @@
 # PERPLEXITY_API_KEY = your_perplexity_api_key_here
 
 [[redirects]]
-  # Handle 404s by serving index.html (for single page app behavior)
+  # Handle SPA routing - redirect to index.html for non-file requests
   from = "/*"
   to = "/index.html"
   status = 200
+  force = false
 
 [[headers]]
   # Apply security headers to all pages
