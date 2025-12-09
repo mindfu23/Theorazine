@@ -1,0 +1,41 @@
+[build]
+  # Static site - no build process needed
+  command = "echo 'No build required for static site'"
+  publish = "."
+
+# Environment variables for Netlify deployment
+# Set these in your Netlify dashboard under Site settings > Environment variables:
+# PERPLEXITY_API_KEY = your_perplexity_api_key_here
+
+[[redirects]]
+  # Handle 404s by serving index.html (for single page app behavior)
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[[headers]]
+  # Apply security headers to all pages
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    X-XSS-Protection = "1; mode=block"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' api.perplexity.ai; font-src 'self' data:;"
+
+[[headers]]
+  # Cache static assets
+  for = "/js/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000"
+
+[[headers]]
+  for = "/css/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000"
+
+[[headers]]
+  # Don't cache HTML files
+  for = "*.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
