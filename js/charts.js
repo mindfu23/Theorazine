@@ -163,10 +163,6 @@ function doUpdateTimeDecayChart(conspirators, professionType, currentYears) {
         showChartUnavailable(ctx);
     }
 }
-            }
-        }
-    });
-}
 
 /**
  * Update the probability gauge/meter
