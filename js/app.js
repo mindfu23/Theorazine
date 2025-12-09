@@ -121,21 +121,27 @@ async function handlePerplexityQuery() {
     if (!domElements.perplexityResults) return;
     
     domElements.perplexityBtn.disabled = true;
-    domElements.perplexityResults.innerHTML = '<div class="loading">Querying Perplexity...</div>';
+    domElements.perplexityResults.innerHTML = '<div class="loading">🧠 Analyzing with Perplexity AI Sonar Reasoning...</div>';
     
     try {
         const result = await window.queryPerplexity(name, desc);
-        const answer = result.choices?.[0]?.message?.content || 'No answer received.';
+        const answer = result.choices?.[0]?.message?.content || 'No analysis received.';
         
         // Sanitize and format the response
         const sanitizedAnswer = sanitizeHTML(answer);
         const footnotes = extractFootnotes(answer);
         
+        // Parse the structured response and format it nicely
+        const formattedAnswer = formatPerplexityResponse(sanitizedAnswer);
+        
         domElements.perplexityResults.innerHTML = `
             <div class="perplexity-result">
-                <strong>Perplexity Estimate:</strong>
-                <pre class="answer-text">${sanitizedAnswer}</pre>
-                ${footnotes ? `<div class="sources"><strong>Sources:</strong><br>${footnotes}</div>` : ''}
+                <div class="result-header">
+                    <h4>🧠 AI Analysis Results</h4>
+                    <span class="model-tag">Powered by Perplexity Sonar Reasoning</span>
+                </div>
+                <div class="answer-content">${formattedAnswer}</div>
+                ${footnotes ? `<div class="sources"><strong>🔗 Sources:</strong><br>${footnotes}</div>` : ''}
             </div>
         `;
     } catch (error) {
@@ -165,6 +171,28 @@ function sanitizeHTML(str) {
     const div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;
+}
+
+/**
+ * Format Perplexity response with better structure
+ */
+function formatPerplexityResponse(text) {
+    // Replace numbered sections with styled headers
+    let formatted = text
+        .replace(/(\d+\.\s*[A-Z\s]+:)/g, '<h5>$1</h5>')
+        .replace(/([A-Z\s]+:)\s*$/gm, '<h5>$1</h5>')
+        .replace(/\n\n/g, '</p><p>')
+        .replace(/\n/g, '<br>');
+    
+    // Wrap in paragraph tags
+    if (formatted && !formatted.startsWith('<')) {
+        formatted = '<p>' + formatted + '</p>';
+    }
+    
+    // Fix any broken paragraph tags
+    formatted = formatted.replace(/<p><h5>/g, '<h5>').replace(/<\/h5><\/p>/g, '</h5>');
+    
+    return formatted;
 }
 
 /**

@@ -80,38 +80,57 @@ exports.handler = async function(event, context) {
   const sanitizedName = conspiracyName.replace(/[<>]/g, '').trim();
   const sanitizedDescription = description.replace(/[<>]/g, '').trim();
 
-  const prompt = `Estimate for the following conspiracy theory:
-Name: ${sanitizedName}
+  const prompt = `Analyze the following conspiracy theory using reasoning and factual research:
+
+Conspiracy Theory: ${sanitizedName}
 Description: ${sanitizedDescription}
 
-Please provide a structured analysis including:
-A) Estimated number of people involved
-B) Types of conspirators (majority profession/role)
-C) Number of years the conspiracy has allegedly been active
-D) Total population affected or interested
-E) Source references and analysis
+Please provide a structured, evidence-based analysis:
 
-Keep response under 400 words.`;
+1. ESTIMATED SCALE:
+   - Number of people who would need to be involved to maintain this conspiracy
+   - Type of conspirators (profession/role) required
+
+2. TEMPORAL ANALYSIS:
+   - How long has this theory allegedly been active?
+   - Historical context and timeline
+
+3. IMPACT ASSESSMENT:
+   - Population size that would be affected or interested
+   - Scope of influence (local, national, global)
+
+4. FEASIBILITY FACTORS:
+   - Practical challenges to maintaining secrecy
+   - Historical precedents of similar-scale conspiracies
+
+5. SOURCE EVALUATION:
+   - Key claims and their factual basis
+   - Credible sources and evidence quality
+
+Please be objective, cite specific examples where possible, and keep response under 500 words.`;
 
   try {
     // Dynamic import for node-fetch v3 ESM
     const { default: fetch } = await import('node-fetch');
     
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+    const timeout = setTimeout(() => controller.abort(), 45000); // 45 second timeout for reasoning model
 
     const response = await fetch('https://api.perplexity.ai/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
-        'User-Agent': 'Theorazine/1.0'
+        'User-Agent': 'Theorazine/2.0'
       },
       body: JSON.stringify({
-        model: 'pplx-7b-online',
-        messages: [{ role: 'user', content: prompt }],
-        max_tokens: 512,
-        temperature: 0.3 // More focused responses
+        model: 'sonar-reasoning',
+        messages: [{ 
+          role: 'user', 
+          content: prompt 
+        }],
+        max_tokens: 1000, // Increased for more detailed analysis
+        temperature: 0.1 // Very focused responses for analytical tasks
       }),
       signal: controller.signal
     });
