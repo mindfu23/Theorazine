@@ -433,6 +433,9 @@ function updateCalculations() {
         if (typeof updateComparisonChart === 'function') {
             updateComparisonChart(conspirators, professionType);
         }
+        if (typeof updateProbabilityGauge === 'function') {
+            updateProbabilityGauge(survivalProb);
+        }
     } catch (error) {
         console.error('Error updating calculations:', error);
         showErrorMessage('Error updating calculations. Please check your inputs.');
