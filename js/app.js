@@ -296,245 +296,181 @@ function extractFootnotes(text) {
     return urls.map(url => `<a href="${url}" target="_blank" rel="noopener">${url}</a>`).join('<br>');
 }
 
-    /**
-     * Load a preset conspiracy theory
-     */
-    function loadPreset(presetId) {
-        try {
-            const preset = getPreset(presetId);
-            if (!preset) {
-                console.error('Preset not found:', presetId);
-                return;
-            }
-
-            // Update inputs safely
-            if (domElements.conspirators) {
-                domElements.conspirators.value = preset.conspirators;
-            }
-            if (domElements.conspiratorsSlider) {
-                domElements.conspiratorsSlider.value = Math.min(preset.conspirators, parseInt(domElements.conspiratorsSlider.max));
-            }
-            if (domElements.professionType) {
-                domElements.professionType.value = preset.professionType;
-            }
-            if (domElements.yearsActive) {
-                domElements.yearsActive.value = preset.yearsActive;
-            }
-            if (domElements.yearsActiveSlider) {
-                domElements.yearsActiveSlider.value = Math.min(preset.yearsActive, parseInt(domElements.yearsActiveSlider.max));
-            }
-            if (domElements.populationAffected) {
-                domElements.populationAffected.value = preset.populationAffected;
-            }
-
-            // Highlight active button
-            domElements.presetButtons.forEach(btn => btn.classList.remove('active'));
-            const activeButton = document.querySelector(`[data-preset="${presetId}"]`);
-            if (activeButton) {
-                activeButton.classList.add('active');
-            }
-
-            // Update calculations
-            updateCalculations();
-
-            // Show preset information
-            showPresetInfo(preset);
-        } catch (error) {
-            console.error('Error loading preset:', error);
-            showErrorMessage('Failed to load preset. Please try again.');
+/**
+ * Load a preset conspiracy theory
+ */
+function loadPreset(presetId) {
+    try {
+        const preset = getPreset(presetId);
+        if (!preset) {
+            console.error('Preset not found:', presetId);
+            return;
         }
-    }
 
-    /**
-     * Show information about the loaded preset
-     */
-    function showPresetInfo(preset) {
-        if (!domElements.survivalCard) return;
-        
-        try {
-            const existingInfo = domElements.survivalCard.querySelector('.preset-info');
-            if (existingInfo) {
-                existingInfo.remove();
-            }
-
-            const infoDiv = document.createElement('div');
-            infoDiv.className = 'preset-info';
-            infoDiv.innerHTML = `
-                <h4>${sanitizeHTML(preset.name)}</h4>
-                <p>${sanitizeHTML(preset.description)}</p>
-                <p class="preset-explanation">${sanitizeHTML(preset.explanation)}</p>
-            `;
-            
-            domElements.survivalCard.insertBefore(infoDiv, domElements.survivalCard.firstChild);
-        } catch (error) {
-            console.error('Error showing preset info:', error);
+        // Update inputs safely
+        if (domElements.conspirators) {
+            domElements.conspirators.value = preset.conspirators;
         }
-    }
-
-    /**
-     * Update all calculations and visualizations
-     */
-    function updateCalculations() {
-        if (isCalculating) return; // Prevent concurrent calculations
-        
-        try {
-            isCalculating = true;
-            
-            const conspirators = parseInt(domElements.conspirators?.value) || 0;
-            const professionType = domElements.professionType?.value || 'general';
-            const years = parseInt(domElements.yearsActive?.value) || 0;
-            const populationAffected = parseInt(domElements.populationAffected?.value) || 0;
-
-            // Validate inputs
-            if (conspirators < 1 || years < 0) {
-                console.warn('Invalid input values');
-                return;
-            }
-
-            // Calculate probabilities with error handling
-            const survivalProb = calculateSurvivalProbability(conspirators, years, professionType);
-            const exposureProb = calculateExposureProbability(conspirators, years, professionType);
-            const expectedTime = calculateExpectedTimeUntilExposure(conspirators, professionType);
-            const credibility = getCredibilityLevel(survivalProb);
-
-            // Update result displays safely
-            if (domElements.survivalProbability) {
-                domElements.survivalProbability.textContent = formatProbability(survivalProb);
-            }
-            if (domElements.exposureProbability) {
-                domElements.exposureProbability.textContent = formatProbability(exposureProb);
-            }
-            if (domElements.expectedTime) {
-                domElements.expectedTime.textContent = formatTimeDuration(expectedTime);
-            }
-
-            // Update survival description
-            if (domElements.survivalDescription) {
-                domElements.survivalDescription.textContent = 
-                    `With ${conspirators.toLocaleString()} ${getProfessionName(professionType)} keeping this secret for ${years} years`;
-            }
-
-            // Update credibility banner - only if not in Perplexity analysis mode
-            if (domElements.credibilityBanner && credibility) {
-                domElements.credibilityBanner.className = `credibility-banner ${credibility.color}`;
-                
-                // Only update if not currently showing Perplexity status
-                const currentStatus = domElements.credibilityLevel?.textContent;
-                if (currentStatus && !['Assessing', 'Awaiting response'].includes(currentStatus)) {
-                    const mathCredibility = getCredibilityFromProbability(survivalProb * 100);
-                    updateCredibilityStatus(mathCredibility.status, mathCredibility.description);
-                }
-            }
-
-            // Update charts if functions exist
-            if (typeof updateTimeDecayChart === 'function') {
-                updateTimeDecayChart(conspirators, professionType, years);
-            }
-            if (typeof updateComparisonChart === 'function') {
-                updateComparisonChart(conspirators, professionType);
-            }
-        } catch (error) {
-            console.error('Error updating calculations:', error);
-            showErrorMessage('Error updating calculations. Please check your inputs.');
-        } finally {
-            isCalculating = false;
+        if (domElements.conspiratorsSlider) {
+            domElements.conspiratorsSlider.value = Math.min(preset.conspirators, parseInt(domElements.conspiratorsSlider.max));
         }
+        if (domElements.professionType) {
+            domElements.professionType.value = preset.professionType;
+        }
+        if (domElements.yearsActive) {
+            domElements.yearsActive.value = preset.yearsActive;
+        }
+        if (domElements.yearsActiveSlider) {
+            domElements.yearsActiveSlider.value = Math.min(preset.yearsActive, parseInt(domElements.yearsActiveSlider.max));
+        }
+        if (domElements.populationAffected) {
+            domElements.populationAffected.value = preset.populationAffected;
+        }
+
+        // Highlight active button
+        domElements.presetButtons.forEach(btn => btn.classList.remove('active'));
+        const activeButton = document.querySelector(`[data-preset="${presetId}"]`);
+        if (activeButton) {
+            activeButton.classList.add('active');
+        }
+
+        // Update calculations
+        updateCalculations();
+
+        // Show preset information
+        showPresetInfo(preset);
+    } catch (error) {
+        console.error('Error loading preset:', error);
+        showErrorMessage('Failed to load preset. Please try again.');
     }
+}
 
-        // Update result card colors
-        updateResultCardColors(survivalProb);
+/**
+ * Show information about the loaded preset
+ */
+function showPresetInfo(preset) {
+    if (!domElements.survivalCard) return;
+    
+    try {
+        const existingInfo = domElements.survivalCard.querySelector('.preset-info');
+        if (existingInfo) {
+            existingInfo.remove();
+        }
 
-        // Update all visualizations
-        updateAllVisualizations(conspirators, professionType, years);
-    }
-
-    /**
-     * Update result card colors based on probability
-     */
-    function updateResultCardColors(probability) {
-        const survivalCard = document.getElementById('survivalCard');
-        const exposureCard = document.getElementById('exposureCard');
-        const expectedTimeCard = document.getElementById('expectedTimeCard');
-
-        const credibility = getCredibilityLevel(probability);
+        const infoDiv = document.createElement('div');
+        infoDiv.className = 'preset-info';
+        infoDiv.innerHTML = `
+            <h4>${sanitizeHTML(preset.name)}</h4>
+            <p>${sanitizeHTML(preset.description)}</p>
+            <p class="preset-explanation">${sanitizeHTML(preset.explanation)}</p>
+        `;
         
-        survivalCard.className = `result-card ${credibility.color}`;
-        exposureCard.className = `result-card ${credibility.color === 'green' ? 'red' : credibility.color === 'red' ? 'green' : 'yellow'}`;
-        expectedTimeCard.className = `result-card ${credibility.color}`;
+        domElements.survivalCard.insertBefore(infoDiv, domElements.survivalCard.firstChild);
+    } catch (error) {
+        console.error('Error showing preset info:', error);
     }
+}
 
-    /**
-     * Get human-readable profession name
-     */
-    function getProfessionName(professionType) {
-        const names = {
-            'scientists': 'scientists/researchers',
-            'intelligence': 'intelligence workers',
-            'government': 'government bureaucrats',
-            'military': 'military personnel',
-            'corporate': 'corporate employees',
-            'general': 'members of the general public'
-        };
-        return names[professionType] || 'conspirators';
+/**
+ * Update all calculations and visualizations
+ */
+function updateCalculations() {
+    if (isCalculating) return; // Prevent concurrent calculations
+    
+    try {
+        isCalculating = true;
+        
+        const conspirators = parseInt(domElements.conspirators?.value) || 0;
+        const professionType = domElements.professionType?.value || 'general';
+        const years = parseInt(domElements.yearsActive?.value) || 0;
+        const populationAffected = parseInt(domElements.populationAffected?.value) || 0;
+
+        // Validate inputs
+        if (conspirators < 1 || years < 0) {
+            console.warn('Invalid input values');
+            return;
+        }
+
+        // Calculate probabilities with error handling
+        const survivalProb = calculateSurvivalProbability(conspirators, years, professionType);
+        const exposureProb = calculateExposureProbability(conspirators, years, professionType);
+        const expectedTime = calculateExpectedTimeUntilExposure(conspirators, professionType);
+        const credibility = getCredibilityLevel(survivalProb);
+
+        // Update result displays safely
+        if (domElements.survivalProbability) {
+            domElements.survivalProbability.textContent = formatProbability(survivalProb);
+        }
+        if (domElements.exposureProbability) {
+            domElements.exposureProbability.textContent = formatProbability(exposureProb);
+        }
+        if (domElements.expectedTime) {
+            domElements.expectedTime.textContent = formatTimeDuration(expectedTime);
+        }
+
+        // Update survival description
+        if (domElements.survivalDescription) {
+            domElements.survivalDescription.textContent = 
+                `With ${conspirators.toLocaleString()} ${getProfessionName(professionType)} keeping this secret for ${years} years`;
+        }
+
+        // Update credibility banner - only if not in Perplexity analysis mode
+        if (domElements.credibilityBanner && credibility) {
+            domElements.credibilityBanner.className = `credibility-banner ${credibility.color}`;
+            
+            // Only update if not currently showing Perplexity status
+            const currentStatus = domElements.credibilityLevel?.textContent;
+            if (currentStatus && !['Assessing', 'Awaiting response'].includes(currentStatus)) {
+                const mathCredibility = getCredibilityFromProbability(survivalProb * 100);
+                updateCredibilityStatus(mathCredibility.status, mathCredibility.description);
+            }
+        }
+
+        // Update charts if functions exist
+        if (typeof updateTimeDecayChart === 'function') {
+            updateTimeDecayChart(conspirators, professionType, years);
+        }
+        if (typeof updateComparisonChart === 'function') {
+            updateComparisonChart(conspirators, professionType);
+        }
+    } catch (error) {
+        console.error('Error updating calculations:', error);
+        showErrorMessage('Error updating calculations. Please check your inputs.');
+    } finally {
+        isCalculating = false;
     }
+}
 
-    // Initialize charts
-    initializeCharts();
+/**
+ * Update result card colors based on probability
+ */
+function updateResultCardColors(probability) {
+    const survivalCard = document.getElementById('survivalCard');
+    const exposureCard = document.getElementById('exposureCard');
+    const expectedTimeCard = document.getElementById('expectedTimeCard');
 
-    // Initial calculation
-    updateCalculations();
+    const credibility = getCredibilityLevel(probability);
+    
+    survivalCard.className = `result-card ${credibility.color}`;
+    exposureCard.className = `result-card ${credibility.color === 'green' ? 'red' : credibility.color === 'red' ? 'green' : 'yellow'}`;
+    expectedTimeCard.className = `result-card ${credibility.color}`;
+}
 
-    // Add smooth scrolling for anchor links
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-        anchor.addEventListener('click', function (e) {
-            e.preventDefault();
-            const target = document.querySelector(this.getAttribute('href'));
-            if (target) {
-                target.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'start'
-                });
-            }
-        });
-    });
+/**
+ * Get human-readable profession name
+ */
+function getProfessionName(professionType) {
+    const names = {
+        'scientists': 'scientists/researchers',
+        'intelligence': 'intelligence workers',
+        'government': 'government bureaucrats',
+        'military': 'military personnel',
+        'corporate': 'corporate employees',
+        'general': 'members of the general public'
+    };
+    return names[professionType] || 'conspirators';
+}
 
-    // Add keyboard navigation for sliders
-    [conspiratorsSlider, yearsActiveSlider].forEach(slider => {
-        slider.addEventListener('keydown', function(e) {
-            const step = e.shiftKey ? 10 : 1;
-            let value = parseInt(this.value);
-            
-            if (e.key === 'ArrowUp' || e.key === 'ArrowRight') {
-                value = Math.min(value + step, parseInt(this.max));
-                this.value = value;
-                e.preventDefault();
-            } else if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') {
-                value = Math.max(value - step, parseInt(this.min));
-                this.value = value;
-                e.preventDefault();
-            }
-            
-            if (this === conspiratorsSlider) {
-                conspiratorsInput.value = value;
-            } else if (this === yearsActiveSlider) {
-                yearsActiveInput.value = value;
-            }
-            
-            updateCalculations();
-        });
-    });
+// Initialize charts on load
+initializeCharts();
 
-    // Make tooltips work on touch devices
-    const tooltips = document.querySelectorAll('.tooltip');
-    tooltips.forEach(tooltip => {
-        tooltip.addEventListener('click', function(e) {
-            e.stopPropagation();
-            this.classList.toggle('active');
-        });
-    });
-
-    // Close tooltips when clicking outside
-    document.addEventListener('click', function() {
-        tooltips.forEach(tooltip => tooltip.classList.remove('active'));
-    });
-});
