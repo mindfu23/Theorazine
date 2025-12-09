@@ -125,7 +125,7 @@ Please be objective, cite specific examples where possible, and keep response un
         'User-Agent': 'Theorazine/2.0'
       },
       body: JSON.stringify({
-        model: 'sonar-reasoning',
+        model: 'sonar-pro',  // Using sonar-pro for advanced reasoning
         messages: [{ 
           role: 'user', 
           content: prompt 
@@ -144,15 +144,19 @@ Please be objective, cite specific examples where possible, and keep response un
       
       let errorMessage = 'External service temporarily unavailable.';
       if (response.status === 401) {
-        errorMessage = 'Authentication error.';
+        errorMessage = 'Authentication error. Check API key.';
       } else if (response.status === 429) {
         errorMessage = 'Rate limit exceeded. Please try again later.';
+      } else if (response.status === 400) {
+        errorMessage = 'Invalid request: ' + errorText;
+      } else if (response.status === 404) {
+        errorMessage = 'API endpoint or model not found: ' + errorText;
       }
       
       return {
-        statusCode: response.status,
+        statusCode: 200, // Return 200 so browser can read the error message
         headers,
-        body: JSON.stringify({ error: errorMessage })
+        body: JSON.stringify({ error: errorMessage, details: errorText })
       };
     }
 
