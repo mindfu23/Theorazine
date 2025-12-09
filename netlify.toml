@@ -2,6 +2,7 @@
   # Static site - no build process needed
   command = "echo 'No build required for static site'"
   publish = "."
+  functions = "netlify/functions"
 
 # Environment variables for Netlify deployment
 # Set these in your Netlify dashboard under Site settings > Environment variables:
