@@ -8,12 +8,8 @@
 # Set these in your Netlify dashboard under Site settings > Environment variables:
 # PERPLEXITY_API_KEY = your_perplexity_api_key_here
 
-[[redirects]]
-  # Handle SPA routing - redirect to index.html for non-file requests
-  from = "/*"
-  to = "/index.html"
-  status = 200
-  force = false
+# No redirects - let functions work normally
+# Netlify automatically handles SPA routing for static files
 
 [[headers]]
   # Apply security headers to all pages
