@@ -50,9 +50,12 @@ function initializeDOMElements() {
  */
 function initializeEventListeners() {
 
-    // Perplexity API integration
-    if (domElements.perplexityBtn && window.queryPerplexity) {
+    // Perplexity API integration - always attach the listener
+    if (domElements.perplexityBtn) {
+        console.log('Attaching click listener to perplexityBtn');
         domElements.perplexityBtn.addEventListener('click', handlePerplexityQuery);
+    } else {
+        console.warn('perplexityBtn not found in DOM');
     }
     // Sync inputs with sliders and add debounced updates
     if (domElements.conspirators && domElements.conspiratorsSlider) {
@@ -135,16 +138,24 @@ function getCredibilityFromProbability(probability) {
  * Handle Perplexity API query with proper error handling
  */
 async function handlePerplexityQuery() {
+    console.log('handlePerplexityQuery called');
+    
     const name = domElements.conspiracyName?.value?.trim();
     const desc = domElements.conspiracyDescription?.value?.trim();
+    
+    console.log('Name:', name, 'Description:', desc);
     
     if (!name || !desc) {
         showErrorMessage('Please enter both a name and description.', domElements.perplexityResults);
         return;
     }
     
-    if (!domElements.perplexityResults) return;
+    if (!domElements.perplexityResults) {
+        console.error('perplexityResults element not found');
+        return;
+    }
     
+    console.log('Updating status to Assessing');
     // Update status: Assessing
     updateCredibilityStatus('Assessing', 'Analyzing conspiracy theory details...');
     
@@ -152,8 +163,14 @@ async function handlePerplexityQuery() {
     domElements.perplexityResults.innerHTML = '<div class="loading">🧠 Analyzing with Perplexity AI Sonar Reasoning...</div>';
     
     try {
+        console.log('Updating status to Awaiting response');
         // Update status: Awaiting response
         updateCredibilityStatus('Awaiting response', 'Contacting Perplexity AI for analysis...');
+        
+        console.log('Checking if queryPerplexity exists:', typeof window.queryPerplexity);
+        if (!window.queryPerplexity) {
+            throw new Error('Perplexity API function not loaded');
+        }
         
         const result = await window.queryPerplexity(name, desc);
         const answer = result.choices?.[0]?.message?.content || 'No analysis received.';
