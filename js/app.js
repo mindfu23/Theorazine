@@ -107,6 +107,31 @@ function syncInputWithSlider(input, slider) {
 }
 
 /**
+ * Update the credibility status banner
+ */
+function updateCredibilityStatus(status, description) {
+    if (domElements.credibilityLevel) {
+        domElements.credibilityLevel.textContent = status;
+    }
+    if (domElements.credibilityDescription) {
+        domElements.credibilityDescription.textContent = description;
+    }
+}
+
+/**
+ * Determine credibility based on conspiracy probability
+ */
+function getCredibilityFromProbability(probability) {
+    if (probability < 10) {
+        return { status: 'Unlikely', description: 'Mathematical analysis suggests this conspiracy is highly improbable' };
+    } else if (probability < 30) {
+        return { status: 'Possible', description: 'Some plausibility based on mathematical factors' };
+    } else {
+        return { status: 'Possible', description: 'Mathematical factors suggest this could be feasible' };
+    }
+}
+
+/**
  * Handle Perplexity API query with proper error handling
  */
 async function handlePerplexityQuery() {
@@ -120,10 +145,16 @@ async function handlePerplexityQuery() {
     
     if (!domElements.perplexityResults) return;
     
+    // Update status: Assessing
+    updateCredibilityStatus('Assessing', 'Analyzing conspiracy theory details...');
+    
     domElements.perplexityBtn.disabled = true;
     domElements.perplexityResults.innerHTML = '<div class="loading">🧠 Analyzing with Perplexity AI Sonar Reasoning...</div>';
     
     try {
+        // Update status: Awaiting response
+        updateCredibilityStatus('Awaiting response', 'Contacting Perplexity AI for analysis...');
+        
         const result = await window.queryPerplexity(name, desc);
         const answer = result.choices?.[0]?.message?.content || 'No analysis received.';
         
@@ -144,9 +175,15 @@ async function handlePerplexityQuery() {
                 ${footnotes ? `<div class="sources"><strong>🔗 Sources:</strong><br>${footnotes}</div>` : ''}
             </div>
         `;
+        
+        // Analyze response to determine credibility
+        const credibility = analyzePerplexityResponse(answer);
+        updateCredibilityStatus(credibility.status, credibility.description);
+        
     } catch (error) {
         console.error('Perplexity API error:', error);
         showErrorMessage(`Error: ${error.message}`, domElements.perplexityResults);
+        updateCredibilityStatus('Error', 'Unable to complete analysis. Please try again.');
     } finally {
         domElements.perplexityBtn.disabled = false;
     }
@@ -193,6 +230,44 @@ function formatPerplexityResponse(text) {
     formatted = formatted.replace(/<p><h5>/g, '<h5>').replace(/<\/h5><\/p>/g, '</h5>');
     
     return formatted;
+}
+
+/**
+ * Analyze Perplexity response to determine credibility
+ */
+function analyzePerplexityResponse(text) {
+    const lowerText = text.toLowerCase();
+    
+    // Look for key phrases that indicate likelihood
+    const unlikelyIndicators = [
+        'highly unlikely', 'extremely unlikely', 'virtually impossible', 'no credible evidence',
+        'lacks evidence', 'debunked', 'conspiracy theory', 'unfounded', 'implausible'
+    ];
+    
+    const possibleIndicators = [
+        'possible', 'plausible', 'could be', 'might be', 'some evidence', 'partially supported',
+        'elements of truth', 'mixed evidence', 'uncertain'
+    ];
+    
+    const unlikelyCount = unlikelyIndicators.filter(phrase => lowerText.includes(phrase)).length;
+    const possibleCount = possibleIndicators.filter(phrase => lowerText.includes(phrase)).length;
+    
+    if (unlikelyCount > possibleCount) {
+        return {
+            status: 'Unlikely',
+            description: 'AI analysis suggests this theory lacks credible support'
+        };
+    } else if (possibleCount > 0) {
+        return {
+            status: 'Possible',
+            description: 'AI analysis finds some elements that warrant consideration'
+        };
+    } else {
+        return {
+            status: 'Uncertain',
+            description: 'AI analysis is inconclusive - more data needed'
+        };
+    }
 }
 
 /**
@@ -322,14 +397,15 @@ function extractFootnotes(text) {
                     `With ${conspirators.toLocaleString()} ${getProfessionName(professionType)} keeping this secret for ${years} years`;
             }
 
-            // Update credibility banner
+            // Update credibility banner - only if not in Perplexity analysis mode
             if (domElements.credibilityBanner && credibility) {
                 domElements.credibilityBanner.className = `credibility-banner ${credibility.color}`;
-                if (domElements.credibilityLevel) {
-                    domElements.credibilityLevel.textContent = credibility.level;
-                }
-                if (domElements.credibilityDescription) {
-                    domElements.credibilityDescription.textContent = credibility.description;
+                
+                // Only update if not currently showing Perplexity status
+                const currentStatus = domElements.credibilityLevel?.textContent;
+                if (currentStatus && !['Assessing', 'Awaiting response'].includes(currentStatus)) {
+                    const mathCredibility = getCredibilityFromProbability(survivalProb * 100);
+                    updateCredibilityStatus(mathCredibility.status, mathCredibility.description);
                 }
             }
 

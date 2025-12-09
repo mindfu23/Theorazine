@@ -43,6 +43,15 @@
                         <button id="perplexityBtn">🧠 Analyze with Perplexity AI (Sonar Reasoning)</button>
                         <p class="helper-text">Get an AI-powered analysis of this conspiracy theory's feasibility and scale</p>
                     </div>
+
+                    <!-- Perplexity Analysis Status -->
+                    <div class="credibility-banner" id="credibilityBanner">
+                        <h3 id="credibilityLevel">Let's see</h3>
+                        <p id="credibilityDescription">Ready to analyze...</p>
+                    </div>
+
+                    <div id="perplexityResults" style="margin-top:1em;"></div>
+
                     <div class="input-group">
                         <label for="conspirators">
                             Number of Conspirators
@@ -91,7 +100,6 @@
                         </label>
                         <input type="number" id="populationAffected" min="0" max="10000000000" value="1000000" step="1000">
                     </div>
-                    <div id="perplexityResults" style="margin-top:1em;"></div>
                 </div>
             </section>
 
@@ -117,11 +125,6 @@
                         <div class="result-value" id="expectedTime">10 years</div>
                         <p class="result-description">When the probability of remaining secret drops to 50%</p>
                     </div>
-                </div>
-
-                <div class="credibility-banner" id="credibilityBanner">
-                    <h3 id="credibilityLevel">Unlikely</h3>
-                    <p id="credibilityDescription">Assessing credibility...</p>
                 </div>
             </section>
 
