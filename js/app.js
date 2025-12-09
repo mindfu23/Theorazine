@@ -193,6 +193,9 @@ async function handlePerplexityQuery() {
             </div>
         `;
         
+        // Extract scale estimates from AI response and update inputs
+        extractAndApplyScaleEstimates(answer);
+        
         // Analyze response to determine credibility
         const credibility = analyzePerplexityResponse(answer);
         updateCredibilityStatus(credibility.status, credibility.description);
@@ -247,6 +250,141 @@ function formatPerplexityResponse(text) {
     formatted = formatted.replace(/<p><h5>/g, '<h5>').replace(/<\/h5><\/p>/g, '</h5>');
     
     return formatted;
+}
+
+/**
+ * Extract scale estimates from Perplexity response and update inputs
+ */
+function extractAndApplyScaleEstimates(text) {
+    const lowerText = text.toLowerCase();
+    
+    // Extract number of conspirators
+    let conspirators = null;
+    
+    // Look for explicit numbers first
+    const conspiratorPatterns = [
+        /(\d{1,3}(?:,\d{3})*)\s*(?:people|conspirators|individuals|employees|workers)/i,
+        /(?:tens of thousands|10,?000s?)\s*(?:of\s+)?(?:people|conspirators)/i,
+        /(?:hundreds of thousands|100,?000s?)\s*(?:of\s+)?(?:people|conspirators)/i,
+        /(?:thousands|1,?000s?)\s*(?:of\s+)?(?:people|conspirators)/i,
+        /(?:hundreds|100s?)\s*(?:of\s+)?(?:people|conspirators)/i,
+        /(?:millions)\s*(?:of\s+)?(?:people|conspirators)/i,
+    ];
+    
+    for (const pattern of conspiratorPatterns) {
+        const match = text.match(pattern);
+        if (match) {
+            if (match[1]) {
+                // Direct number found
+                conspirators = parseInt(match[1].replace(/,/g, ''));
+            } else if (match[0].includes('millions')) {
+                conspirators = 1000000;
+            } else if (match[0].includes('hundreds of thousands')) {
+                conspirators = 100000;
+            } else if (match[0].includes('tens of thousands')) {
+                conspirators = 50000;
+            } else if (match[0].includes('thousands')) {
+                conspirators = 5000;
+            } else if (match[0].includes('hundreds')) {
+                conspirators = 500;
+            }
+            break;
+        }
+    }
+    
+    // Extract years/duration
+    let years = null;
+    
+    const yearPatterns = [
+        /(?:over|nearly|about|approximately|for)\s+(\d+)\s+years/i,
+        /(\d+)\s+years?\s+(?:ago|old|active|duration)/i,
+        /since\s+(?:at least\s+)?(\d{4})/i,
+        /(?:from|since)\s+(\d{4})\s+to\s+(?:present|today|\d{4})/i,
+        /(?:nearly\s+)?(?:a\s+)?century/i,
+        /(?:several|multiple)\s+decades/i,
+    ];
+    
+    for (const pattern of yearPatterns) {
+        const match = text.match(pattern);
+        if (match) {
+            if (match[1]) {
+                const num = parseInt(match[1]);
+                if (num > 1900 && num < 2100) {
+                    // It's a year, calculate duration
+                    years = new Date().getFullYear() - num;
+                } else {
+                    years = num;
+                }
+            } else if (match[0].includes('century')) {
+                years = 85;
+            } else if (match[0].includes('decades')) {
+                years = 40;
+            }
+            break;
+        }
+    }
+    
+    // Extract population affected
+    let populationAffected = null;
+    
+    const populationPatterns = [
+        /(?:billions?\s+of\s+)?(?:people|population)/i,
+        /(?:millions?\s+of\s+)?(?:people|affected)/i,
+        /(?:global|worldwide|entire\s+world)/i,
+        /(\d{1,3}(?:,\d{3})*)\s*(?:people|affected|population)/i,
+    ];
+    
+    if (lowerText.includes('billions') || lowerText.includes('global') || 
+        lowerText.includes('worldwide') || lowerText.includes('entire world')) {
+        populationAffected = 8000000000;
+    } else if (lowerText.includes('millions')) {
+        populationAffected = 10000000;
+    }
+    
+    // Extract profession type based on content
+    let professionType = 'general';
+    
+    if (lowerText.includes('scientist') || lowerText.includes('researcher') || lowerText.includes('academic')) {
+        professionType = 'scientists';
+    } else if (lowerText.includes('intelligence') || lowerText.includes('cia') || lowerText.includes('fbi') || lowerText.includes('spy')) {
+        professionType = 'intelligence';
+    } else if (lowerText.includes('government') || lowerText.includes('bureaucrat') || lowerText.includes('official')) {
+        professionType = 'government';
+    } else if (lowerText.includes('military') || lowerText.includes('army') || lowerText.includes('navy') || lowerText.includes('air force')) {
+        professionType = 'military';
+    } else if (lowerText.includes('corporate') || lowerText.includes('company') || lowerText.includes('business') || lowerText.includes('employee')) {
+        professionType = 'corporate';
+    }
+    
+    console.log('Extracted scale estimates:', { conspirators, years, populationAffected, professionType });
+    
+    // Apply extracted values to inputs
+    if (conspirators !== null && domElements.conspirators) {
+        domElements.conspirators.value = conspirators;
+        if (domElements.conspiratorsSlider) {
+            domElements.conspiratorsSlider.value = Math.min(conspirators, parseInt(domElements.conspiratorsSlider.max) || 10000);
+        }
+    }
+    
+    if (years !== null && domElements.yearsActive) {
+        domElements.yearsActive.value = years;
+        if (domElements.yearsActiveSlider) {
+            domElements.yearsActiveSlider.value = Math.min(years, parseInt(domElements.yearsActiveSlider.max) || 100);
+        }
+    }
+    
+    if (populationAffected !== null && domElements.populationAffected) {
+        domElements.populationAffected.value = populationAffected;
+    }
+    
+    if (professionType && domElements.professionType) {
+        domElements.professionType.value = professionType;
+    }
+    
+    // Trigger recalculation with new values
+    updateCalculations();
+    
+    return { conspirators, years, populationAffected, professionType };
 }
 
 /**
