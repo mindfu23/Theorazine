@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Conspiracy Theorazine - Estimate the Likelihood of Conspiracy Theories</title>
+    <title>Theorazine - the Conspiracy Calculator</title>
     <meta name="description" content="An educational tool using mathematical models to estimate how long conspiracy theories could realistically remain secret.">
     <link rel="stylesheet" href="css/styles.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -11,15 +11,22 @@
 <body>
     <div class="container">
         <header>
-            <h1>🕵️ Conspiracy Theorazine</h1>
-            <p class="subtitle">Can that conspiracy theory actually be true? Let's do the math.</p>
+            <h1>Theorazine - the Conspiracy Calculator</h1>
         </header>
 
         <main>
             <!-- Calculator Section -->
             <section class="calculator-section">
-                <h2>📊 Conspiracy Calculator</h2>
+                <!-- Removed second title -->
                 
+                <div class="input-group">
+                    <label for="conspiracyName">Conspiracy Theory Name</label>
+                    <input type="text" id="conspiracyName" placeholder="e.g. Moon Landing Hoax">
+                </div>
+                <div class="input-group">
+                    <label for="conspiracyDescription">Brief Description</label>
+                    <textarea id="conspiracyDescription" rows="2" placeholder="Describe the conspiracy theory..."></textarea>
+                </div>
                 <div class="preset-buttons">
                     <h3>Or try a famous example:</h3>
                     <div class="preset-grid">
@@ -32,6 +39,9 @@
                 </div>
 
                 <div class="input-section">
+                    <div class="input-group">
+                        <button id="perplexityBtn">Estimate with Perplexity AI</button>
+                    </div>
                     <div class="input-group">
                         <label for="conspirators">
                             Number of Conspirators
@@ -80,6 +90,7 @@
                         </label>
                         <input type="number" id="populationAffected" min="0" max="10000000000" value="1000000" step="1000">
                     </div>
+                    <div id="perplexityResults" style="margin-top:1em;"></div>
                 </div>
             </section>
 
@@ -273,6 +284,7 @@
     <script src="js/calculator.js"></script>
     <script src="js/presets.js"></script>
     <script src="js/charts.js"></script>
+    <script src="js/perplexity.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>

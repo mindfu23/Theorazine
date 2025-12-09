@@ -5,6 +5,32 @@
 
 // Wait for DOM to be fully loaded
 document.addEventListener('DOMContentLoaded', function() {
+    // Perplexity API button logic
+    const perplexityBtn = document.getElementById('perplexityBtn');
+    const conspiracyNameInput = document.getElementById('conspiracyName');
+    const conspiracyDescriptionInput = document.getElementById('conspiracyDescription');
+    const perplexityResults = document.getElementById('perplexityResults');
+
+    if (perplexityBtn) {
+        perplexityBtn.addEventListener('click', async function() {
+            const name = conspiracyNameInput.value.trim();
+            const desc = conspiracyDescriptionInput.value.trim();
+            if (!name || !desc) {
+                perplexityResults.innerHTML = '<span style="color:red">Please enter both a name and description.</span>';
+                return;
+            }
+            perplexityResults.innerHTML = 'Querying Perplexity...';
+            try {
+                const result = await window.queryPerplexity(name, desc);
+                const answer = result.choices?.[0]?.message?.content || 'No answer.';
+                // Try to extract footnotes/links
+                const footnotes = (answer.match(/https?:\/\/[^\s)]+/g) || []).map(url => `<a href="${url}" target="_blank">${url}</a>`).join('<br>');
+                perplexityResults.innerHTML = `<strong>Perplexity Estimate:</strong><br><pre>${answer}</pre>${footnotes ? `<br><strong>Sources:</strong><br>${footnotes}` : ''}`;
+            } catch (e) {
+                perplexityResults.innerHTML = `<span style="color:red">Error: ${e.message}</span>`;
+            }
+        });
+    }
     // Get input elements
     const conspiratorsInput = document.getElementById('conspirators');
     const conspiratorsSlider = document.getElementById('conspiratorsSlider');
