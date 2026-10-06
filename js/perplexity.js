@@ -15,7 +15,12 @@ async function queryPerplexity(conspiracyName, description) {
         if (!response.ok) {
             const errorText = await response.text();
             console.error('Function error response:', errorText);
-            throw new Error(`Function request failed: ${response.status} - ${errorText}`);
+            if (response.status === 429) {
+                throw new Error("You've reached today's limit for AI analyses. Please try again tomorrow.");
+            }
+            let serverMessage = '';
+            try { serverMessage = JSON.parse(errorText).error || ''; } catch (e) { /* not JSON */ }
+            throw new Error(serverMessage || `Analysis request failed (${response.status}). Please try again later.`);
         }
         
         const result = await response.json();

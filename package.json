@@ -10,10 +10,16 @@
     "lint": "echo 'No linting configured'"
   },
   "dependencies": {
+    "@netlify/blobs": "8.2.0",
     "node-fetch": "^3.3.2"
   },
-  "devDependencies": {},
-  "keywords": ["conspiracy", "mathematics", "statistics", "probability", "education"],
+  "keywords": [
+    "conspiracy",
+    "mathematics",
+    "statistics",
+    "probability",
+    "education"
+  ],
   "author": "Your Name",
   "license": "MIT",
   "repository": {

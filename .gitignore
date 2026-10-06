@@ -33,3 +33,6 @@ build/
 ../Postboi/
 ../SearchBard/
 ../StoryPlot/
+
+# Netlify CLI local state
+.netlify/
