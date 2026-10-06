@@ -1,5 +1,5 @@
 // Netlify Function: perplexity
-// Proxies a fixed conspiracy-analysis prompt to Perplexity (sonar-reasoning).
+// Proxies a fixed conspiracy-analysis prompt to Perplexity (sonar-pro).
 // Guarded by ai-guard: POST only, body cap, Origin allowlist, per-visitor and
 // global daily caps (Netlify Blobs), failing closed.
 
@@ -9,8 +9,9 @@ import { asV2 } from './lib/v2-adapter';
 
 const APP_ORIGIN = 'https://theorazine.netlify.app';
 // Fixed: never taken from the request. 'sonar-reasoning' was retired by Perplexity
-// (400 invalid_model, seen 2026-10-06); sonar-reasoning-pro is its replacement.
-const MODEL = 'sonar-reasoning-pro';
+// (400 invalid_model, seen 2026-10-06). sonar-pro (no reasoning step) chosen 2026-10-06: cheaper, and
+// reasoning tokens no longer eat the max_tokens budget.
+const MODEL = 'sonar-pro';
 const MAX_NAME = 200;
 const MAX_DESCRIPTION = 1000;
 
@@ -123,7 +124,7 @@ Please be objective, cite specific examples where possible, and keep response un
         messages: [{ role: 'user', content: prompt }],
         // Reasoning tokens count against this budget; at 1000 the visible answer
         // was cut off after ~130 tokens (finish_reason "length").
-        max_tokens: 3000,
+        max_tokens: 1200,
         temperature: 0.1, // Very focused responses for analytical tasks
       }),
       signal: controller.signal,
